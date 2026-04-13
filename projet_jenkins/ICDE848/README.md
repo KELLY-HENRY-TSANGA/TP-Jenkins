@@ -12,7 +12,7 @@ tp-jenkins/
 ├── Jenkinsfile                      ← Pipeline CI complète
 ├── README.md                        ← Ce fichier
 └── src/
-    ├── main/java/fr/epsi/
+    ├── main/java/fr/epsi/FGF
     │   ├── model/
     │   │   ├── Article.java         ← Modèle : un produit
     │   │   └── Panier.java          ← Modèle : panier d'achats

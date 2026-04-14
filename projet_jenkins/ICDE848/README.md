@@ -6,7 +6,7 @@
 
 ## 📁 Structure du projet
 
-Basé sur la structure réelle de votre dépôt GitHub :
+Basé sur la structure réelle de votre dépôt GitHub :hjfjhfj
 
 ```text
 TP-Jenkins/ (Racine du dépôt)

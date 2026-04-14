@@ -3,25 +3,13 @@ pipeline {
 
     tools {
         maven 'Maven3'
-        jdk 'JDK17'   // décommente seulement si configuré dans Jenkins
+        jdk 'JDK17' 
     }
 
     parameters {
-        string(
-            name: 'BRANCH',
-            defaultValue: 'main',
-            description: 'Branche Git à builder'
-        )
-        choice(
-            name: 'ENVIRONMENT',
-            choices: ['dev', 'staging', 'prod'],
-            description: 'Environnement de déploiement cible'
-        )
-        booleanParam(
-            name: 'SKIP_TESTS',
-            defaultValue: false,
-            description: 'Ignorer les tests (urgence uniquement !)'
-        )
+        string(name: 'BRANCH', defaultValue: 'main', description: 'Branche Git à builder')
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'staging', 'prod'], description: 'Environnement de déploiement cible')
+        booleanParam(name: 'SKIP_TESTS', defaultValue: false, description: 'Ignorer les tests')
     }
 
     stages {
@@ -35,59 +23,53 @@ pipeline {
 
         stage('Build') {
             steps {
-                dir('ICDE848') {
+                // Correction ici : ajout du dossier parent
+                dir('projet_jenkins/ICDE848') {
                     bat 'mvn clean compile -B'
                 }
             }
         }
 
         stage('Tests unitaires') {
-            when {
-                not { expression { params.SKIP_TESTS } }
-            }
+            when { not { expression { params.SKIP_TESTS } } }
             steps {
-                dir('ICDE848') {
+                dir('projet_jenkins/ICDE848') {
                     bat 'mvn test -B'
                 }
             }
             post {
                 always {
-                    junit 'ICDE848/**/target/surefire-reports/*.xml'
-                }
-                failure {
-                    echo 'Tests unitaires en ECHEC — vérifier les logs ci-dessus'
+                    junit 'projet_jenkins/ICDE848/**/target/surefire-reports/*.xml'
                 }
             }
         }
 
         stage('Tests intégration') {
-            when {
-                not { expression { params.SKIP_TESTS } }
-            }
+            when { not { expression { params.SKIP_TESTS } } }
             steps {
-                dir('ICDE848') {
+                dir('projet_jenkins/ICDE848') {
                     bat 'mvn verify -Dsurefire.skip=true -B'
                 }
             }
             post {
                 always {
-                    junit 'ICDE848/**/target/failsafe-reports/*.xml'
+                    junit 'projet_jenkins/ICDE848/**/target/failsafe-reports/*.xml'
                 }
             }
         }
 
         stage('Couverture JaCoCo') {
             steps {
-                dir('ICDE848') {
+                dir('projet_jenkins/ICDE848') {
                     bat 'mvn jacoco:report -B'
                 }
             }
             post {
                 always {
                     jacoco(
-                        execPattern: 'ICDE848/**/target/jacoco.exec',
-                        classPattern: 'ICDE848/**/target/classes',
-                        sourcePattern: 'ICDE848/**/src/main/java',
+                        execPattern: 'projet_jenkins/ICDE848/**/target/jacoco.exec',
+                        classPattern: 'projet_jenkins/ICDE848/**/target/classes',
+                        sourcePattern: 'projet_jenkins/ICDE848/**/src/main/java',
                         minimumLineCoverage: '70'
                     )
                 }
@@ -96,7 +78,7 @@ pipeline {
 
         stage('Qualité') {
             steps {
-                dir('ICDE848') {
+                dir('projet_jenkins/ICDE848') {
                     bat 'mvn checkstyle:checkstyle pmd:pmd pmd:cpd spotbugs:spotbugs -B'
                 }
             }
@@ -105,16 +87,12 @@ pipeline {
                     recordIssues(
                         enabledForFailure: true,
                         tools: [
-                            checkStyle(pattern: 'ICDE848/**/checkstyle-result.xml'),
-                            pmdParser(pattern: 'ICDE848/**/pmd.xml'),
-                            cpd(pattern: 'ICDE848/**/cpd.xml'),
-                            spotBugs(pattern: 'ICDE848/**/spotbugsXml.xml')
+                            checkStyle(pattern: 'projet_jenkins/ICDE848/**/checkstyle-result.xml'),
+                            pmdParser(pattern: 'projet_jenkins/ICDE848/**/pmd.xml'),
+                            cpd(pattern: 'projet_jenkins/ICDE848/**/cpd.xml'),
+                            spotBugs(pattern: 'projet_jenkins/ICDE848/**/spotbugsXml.xml')
                         ],
-                        qualityGates: [[
-                            threshold: 10,
-                            type: 'TOTAL',
-                            unstable: true
-                        ]]
+                        qualityGates: [[threshold: 10, type: 'TOTAL', unstable: true]]
                     )
                 }
             }
@@ -123,11 +101,10 @@ pipeline {
         stage('Archive') {
             steps {
                 archiveArtifacts(
-                    artifacts: 'ICDE848/**/target/*.jar',
+                    artifacts: 'projet_jenkins/ICDE848/**/target/*.jar',
                     fingerprint: true,
                     allowEmptyArchive: false
                 )
-                echo 'Artefact archivé avec succès'
             }
         }
     }
@@ -135,14 +112,6 @@ pipeline {
     post {
         always {
             echo "Pipeline terminée — statut : ${currentBuild.currentResult}"
-        }
-
-        failure {
-            echo 'Envoi email ignoré ou à configurer plus tard'
-        }
-
-        fixed {
-            echo 'Build de nouveau stable'
         }
     }
 }

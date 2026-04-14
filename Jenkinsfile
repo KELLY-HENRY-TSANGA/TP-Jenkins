@@ -16,14 +16,14 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
-                echo "Branch  : ${env.GIT_BRANCH}"
-                echo "Commit  : ${env.GIT_COMMIT}"
+                // On liste les dossiers pour débugger dans la console Jenkins si ça échoue encore
+                bat 'dir' 
             }
         }
 
         stage('Build') {
             steps {
-                // Correction ici : ajout du dossier parent
+                // On utilise le chemin relatif complet vu sur ton GitHub
                 dir('projet_jenkins/ICDE848') {
                     bat 'mvn clean compile -B'
                 }
@@ -39,7 +39,7 @@ pipeline {
             }
             post {
                 always {
-                    junit 'projet_jenkins/ICDE848/**/target/surefire-reports/*.xml'
+                    junit 'projet_jenkins/ICDE848/target/surefire-reports/*.xml'
                 }
             }
         }
@@ -53,7 +53,7 @@ pipeline {
             }
             post {
                 always {
-                    junit 'projet_jenkins/ICDE848/**/target/failsafe-reports/*.xml'
+                    junit 'projet_jenkins/ICDE848/target/failsafe-reports/*.xml'
                 }
             }
         }
@@ -67,9 +67,9 @@ pipeline {
             post {
                 always {
                     jacoco(
-                        execPattern: 'projet_jenkins/ICDE848/**/target/jacoco.exec',
-                        classPattern: 'projet_jenkins/ICDE848/**/target/classes',
-                        sourcePattern: 'projet_jenkins/ICDE848/**/src/main/java',
+                        execPattern: 'projet_jenkins/ICDE848/target/jacoco.exec',
+                        classPattern: 'projet_jenkins/ICDE848/target/classes',
+                        sourcePattern: 'projet_jenkins/ICDE848/src/main/java',
                         minimumLineCoverage: '70'
                     )
                 }
@@ -87,10 +87,10 @@ pipeline {
                     recordIssues(
                         enabledForFailure: true,
                         tools: [
-                            checkStyle(pattern: 'projet_jenkins/ICDE848/**/checkstyle-result.xml'),
-                            pmdParser(pattern: 'projet_jenkins/ICDE848/**/pmd.xml'),
-                            cpd(pattern: 'projet_jenkins/ICDE848/**/cpd.xml'),
-                            spotBugs(pattern: 'projet_jenkins/ICDE848/**/spotbugsXml.xml')
+                            checkStyle(pattern: 'projet_jenkins/ICDE848/target/checkstyle-result.xml'),
+                            pmdParser(pattern: 'projet_jenkins/ICDE848/target/pmd.xml'),
+                            cpd(pattern: 'projet_jenkins/ICDE848/target/cpd.xml'),
+                            spotBugs(pattern: 'projet_jenkins/ICDE848/target/spotbugsXml.xml')
                         ],
                         qualityGates: [[threshold: 10, type: 'TOTAL', unstable: true]]
                     )
@@ -101,7 +101,7 @@ pipeline {
         stage('Archive') {
             steps {
                 archiveArtifacts(
-                    artifacts: 'projet_jenkins/ICDE848/**/target/*.jar',
+                    artifacts: 'projet_jenkins/ICDE848/target/*.jar',
                     fingerprint: true,
                     allowEmptyArchive: false
                 )
